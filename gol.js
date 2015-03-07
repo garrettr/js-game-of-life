@@ -91,6 +91,14 @@ function updateGrid(grid) {
 		return nextGrid;
 }
 
+function clearGrid(grid) {
+		for (var col = 0; col < grid.length; col++) {
+				for (var row = 0; row < grid[col].length; row++) {
+						grid[col][row] = 0;
+				}
+		}
+}
+
 $(function () {
 		var canvas = document.getElementById('world');
 		canvas.width = 500;
@@ -112,8 +120,10 @@ $(function () {
 				if (running === false) {
 						running = true;
 
-						// Update button text
+						// Update UI
 						$(this).html('Stop');
+						$('#clear').prop('disabled', true);
+						$('#random').prop('disabled', true);
 
 						// Start simulation
 						simulationIntervalId = setInterval(function updateAndDrawGrid() {
@@ -122,9 +132,23 @@ $(function () {
 						}, 100);
 				} else {
 						running = false;
+
 						$(this).html('Start');
+						$('#clear').prop('disabled', false);
+						$('#random').prop('disabled', false);
+
 						clearInterval(simulationIntervalId);
 				}
+		});
+
+		$('#clear').click(function () {
+				clearGrid(grid);
+				drawGrid(grid, canvas, ctx);
+		});
+
+		$('#random').click(function() {
+				randomizeGrid(grid);
+				drawGrid(grid, canvas, ctx);
 		});
 
 });
