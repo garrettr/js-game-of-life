@@ -105,8 +105,26 @@ $(function () {
 		randomizeGrid(grid);
 		drawGrid(grid, canvas, ctx);
 
-		setInterval(function updateAndDrawGrid() {
-				grid = updateGrid(grid);
-				drawGrid(grid, canvas, ctx);
-		}, 100);
+		var running = false;
+		var simulationIntervalId = 0;
+
+		$('#startstop').click(function startStopButton() {
+				if (running === false) {
+						running = true;
+
+						// Update button text
+						$(this).html('Stop');
+
+						// Start simulation
+						simulationIntervalId = setInterval(function updateAndDrawGrid() {
+								grid = updateGrid(grid);
+								drawGrid(grid, canvas, ctx);
+						}, 100);
+				} else {
+						running = false;
+						$(this).html('Start');
+						clearInterval(simulationIntervalId);
+				}
+		});
+
 });
