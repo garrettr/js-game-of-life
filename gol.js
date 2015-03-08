@@ -5,6 +5,11 @@ Number.prototype.mod = function(n) { return ((this%n)+n)%n; };
 var DEAD = 0;
 var ALIVE = 1;
 
+function Cell(x, y) {
+		this.x = x;
+		this.y = y;
+}
+
 function Grid(width, height) {
 		this.width = width;
 		this.height = height;
@@ -148,6 +153,10 @@ $(function () {
 				}
 		});
 
+		// Default to the center of the grid
+		var currentCell = new Cell(Math.floor(grid.width / 2),
+															 Math.floor(grid.height / 2));
+		
 		$('#world').click(function drawInCanvas(event) {
 				if (running === true) {
 						return; // Don't allow drawing while simulation is running
@@ -166,8 +175,44 @@ $(function () {
 				console.log("x: %d, y: %d, row: %d, col: %d", x, y, row, col);
 
 				var currentVal = grid.get(row, col);
+				currentCell = new Cell(row, col);
 				grid.set(row, col, currentVal == 0 ? 1 : 0);
 				grid.draw(canvas);
+		});
+
+		$(window).keydown(function(e) {
+				var LEFT_ARROW = 37;
+				var RIGHT_ARROW = 39;
+				var UP_ARROW = 38;
+				var DOWN_ARROW = 40;
+				var SPACE = 32;
+
+				var key = e.which;
+				console.log('keypress: %d', key);
+
+				switch(key) {
+				case LEFT_ARROW:
+						currentCell.x = (currentCell.x - 1).mod(grid.width);
+						break;
+				case RIGHT_ARROW:
+						currentCell.x = (currentCell.x + 1).mod(grid.width);
+						break;
+				case UP_ARROW:
+						currentCell.y = (currentCell.y - 1).mod(grid.height);
+						break;
+				case DOWN_ARROW:
+						currentCell.y = (currentCell.y + 1).mod(grid.height);
+						break;
+				case SPACE:
+						grid.set(currentCell.x, currentCell.y,
+										 grid.get(currentCell.x, currentCell.y) === 0 ? 1 : 0);
+						grid.draw(canvas);
+						break;
+				default:
+						break;
+				}
+
+				console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
 		});
 
 		$('#clear').click(function () {
