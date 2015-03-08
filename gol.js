@@ -148,6 +148,28 @@ $(function () {
 				}
 		});
 
+		$('#world').click(function drawInCanvas(event) {
+				if (running === true) {
+						return; // Don't allow drawing while simulation is running
+				}
+
+				var x = event.pageX - canvas.offsetLeft,
+						y = event.pageY - canvas.offsetTop;
+
+				var blockWidth = canvas.width / grid.width;
+				var blockHeight = canvas.height / grid.height;
+
+				// TODO collision detection
+				var row = Math.floor(x / blockWidth),
+						col = Math.floor(y / blockHeight);
+
+				console.log("x: %d, y: %d, row: %d, col: %d", x, y, row, col);
+
+				var currentVal = grid.get(row, col);
+				grid.set(row, col, currentVal == 0 ? 1 : 0);
+				grid.draw(canvas);
+		});
+
 		$('#clear').click(function () {
 				grid.clear();
 				grid.draw(canvas);
