@@ -1,103 +1,113 @@
 // Fix the Javascript modulo bug for negative numbers:
 // http://javascript.about.com/od/problemsolving/a/modulobug.htm
-Number.prototype.mod = function(n) { return ((this%n)+n)%n; }
+Number.prototype.mod = function(n) { return ((this%n)+n)%n; };
 
-function genGrid(width, height) {
-		var grid = [];
-		for (i = 0; i < width; i++) {
-				grid[i] = [];
-				for (j = 0; j < height; j++) {
-						grid[i][j] = 0;
-				}
-		}
-		return grid;
+var DEAD = 0;
+var ALIVE = 1;
+
+function Grid(width, height) {
+		this.width = width;
+		this.height = height;
+		this.space = new Array(width * height);
+		this.clear();
 }
+
+Grid.prototype.clear = function() {
+		for (var i = 0; i < this.space.length; i++) {
+				this.space[i] = DEAD;
+		}
+};
 
 function flipCoin() {
 		return Math.random() < 0.5 ? 0 : 1;
 }
 
-function randomizeGrid(grid) {
-		for (col = 0; col < grid.length; col++) {
-				for (row = 0; row < grid[col].length; row++) {
-						grid[col][row] = flipCoin();
-				}
+Grid.prototype.randomize = function() {
+		for (var i = 0; i < this.space.length; i++) {
+				this.space[i] = flipCoin();
 		}
-}
+};
 
-function drawGrid(grid, canvas, ctx) {
+Grid.prototype.get = function(x, y) {
+		return this.space[x * this.width + y];
+};
+
+Grid.prototype.set = function(x, y, value) {
+		this.space[x * this.width + y] = value;
+};
+
+Grid.prototype.draw = function(canvas) {
+		var ctx = canvas.getContext('2d');
+		ctx.fillStyle = "rgba(90, 90, 90, 1.0)";
+
+		// Clear the canvas
 		ctx.clearRect(0 , 0, canvas.width, canvas.height);
 
-		var blockWidth = canvas.width / grid.length;
-		var blockHeight = canvas.height / grid[0].length;
+		var blockWidth = canvas.width / this.width;
+		var blockHeight = canvas.height / this.height;
 
-		for (col = 0; col < grid.length; col++) {
-				for (row = 0; row < grid[col].length; row++) {
-						if (grid[col][row] == 1) {
-								ctx.fillRect(col*blockWidth, row*blockHeight, blockWidth-1, blockHeight-1);
+		for (var row = 0; row < this.height; row++) {
+				for (var col = 0; col < this.width; col++) {
+						if (this.get(row, col) == ALIVE) {
+								ctx.fillRect(row*blockHeight, col*blockWidth,
+														 blockHeight - 1, blockWidth - 1);
 						}
 				}
 		}
-}
+};
 
-function updateGrid(grid) {
-		var nextGrid = genGrid(grid.length, grid.length);
+Grid.prototype.update = function() {
+		var updated = new Grid(this.width, this.height);
 
-		for (var col = 0; col < grid.length; col++) {
-				for (var row = 0; row < grid[col].length; row++) {
+		for (var row = 0; row < this.height; row++) {
+				for (var col = 0; col < this.width; col++) {
+						// Copy value from previous generation
+						updated.set(row, col, this.get(row, col));
+
+						// Count living neighbors
 						var neighbors = [];
-						
-						for (var rel_col = -1; rel_col <= 1; rel_col++) {
-								for (var rel_row = -1; rel_row <= 1; rel_row++) {
-										if (rel_col == 0 && rel_row == 0) {
+
+						for (var rel_row = -1; rel_row <= 1; rel_row++) {
+								for (var rel_col = -1; rel_col <= 1; rel_col++) {
+										if (rel_row == 0 && rel_col == 0) {
 												continue; // Don't count yourself
 										}
-										var neighbor_col = (col+rel_col).mod(grid.length);
-										var neighbor_row = (row+rel_row).mod(grid.length);
-										neighbors.push(grid[neighbor_col][neighbor_row]);
+										var neighbor_row = (row+rel_row).mod(this.height);
+										var neighbor_col = (col+rel_col).mod(this.width);
+										neighbors.push(this.get(neighbor_row, neighbor_col));
 								}
 						}
 
-						// Copy previos value
-						nextGrid[col][row] = grid[col][row];
-					
-						// Determine whether this cell should be alive or dead in the next generation
-						var total = neighbors.reduce(function(a, b) {
+						var numLiveNeighbors = neighbors.reduce(function(a, b) {
 								return a + b;
 						});
 
-						if (nextGrid[col][row] == 1) { // if the cell is alive
-								switch(total) {
+						// Update cells with the rules of life
+						if (this.get(row, col) == ALIVE) {
+								switch(numLiveNeighbors) {
 								case 0:
 								case 1:
-										nextGrid[col][row] = 0; // underpopulation
+										updated.set(row, col, DEAD); // underpopulation
 										break;
 								case 2:
 								case 3:
-										nextGrid[col][row] = 1; // stay alive
+										updated.set(row, col, ALIVE); // stay alive
 										break;
 								default:
-										nextGrid[col][row] = 0; // overcrowding
+										updated.set(row, col, DEAD); // overcrowding
 										break;
 								}
-						} else { // if the cell is dead
-								if (total == 3) {
-										nextGrid[col][row] = 1; // reproduction
+						} else {
+								if (numLiveNeighbors == 3) {
+										updated.set(row, col, ALIVE); // reproduction
 								}
 						}
 				}
 		}
 
-		return nextGrid;
-}
-
-function clearGrid(grid) {
-		for (var col = 0; col < grid.length; col++) {
-				for (var row = 0; row < grid[col].length; row++) {
-						grid[col][row] = 0;
-				}
-		}
-}
+		// Swap current space with updated space
+		this.space = updated.space;
+};
 
 $(function () {
 		var canvas = document.getElementById('world');
@@ -105,13 +115,10 @@ $(function () {
 		canvas.height = 500;
 		// canvas.width = document.body.clientWidth;
 		// canvas.height = document.body.clientHeight;
-		var ctx = canvas.getContext('2d');
-		ctx.fillStyle = "rgba(90, 90, 90, 1.0)"
-
-		// test grid fns
-		var grid = genGrid(32, 32);
-		randomizeGrid(grid);
-		drawGrid(grid, canvas, ctx);
+	    
+		var grid = new Grid(32, 32);
+		grid.randomize();
+		grid.draw(canvas);
 
 		var running = false;
 		var simulationIntervalId = 0;
@@ -127,8 +134,8 @@ $(function () {
 
 						// Start simulation
 						simulationIntervalId = setInterval(function updateAndDrawGrid() {
-								grid = updateGrid(grid);
-								drawGrid(grid, canvas, ctx);
+								grid.update();
+								grid.draw(canvas);
 						}, 100);
 				} else {
 						running = false;
@@ -142,13 +149,13 @@ $(function () {
 		});
 
 		$('#clear').click(function () {
-				clearGrid(grid);
-				drawGrid(grid, canvas, ctx);
+				grid.clear();
+				grid.draw(canvas);
 		});
 
 		$('#random').click(function() {
-				randomizeGrid(grid);
-				drawGrid(grid, canvas, ctx);
+				grid.randomize();
+				grid.draw(canvas);
 		});
 
 });
