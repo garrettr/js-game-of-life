@@ -188,7 +188,7 @@ $(function () {
 				var SPACE = 32;
 
 				var key = e.which;
-				console.log('keypress: %d', key);
+				//console.log('keypress: %d', key);
 
 				switch(key) {
 				case LEFT_ARROW:
@@ -212,7 +212,7 @@ $(function () {
 						break;
 				}
 
-				console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
+				//console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
 		});
 
 		$('#clear').click(function () {
