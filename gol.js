@@ -156,7 +156,7 @@ $(function () {
 		// Default to the center of the grid
 		var currentCell = new Cell(Math.floor(grid.width / 2),
 															 Math.floor(grid.height / 2));
-		
+
 		$('#world').click(function drawInCanvas(event) {
 				if (running === true) {
 						return; // Don't allow drawing while simulation is running
