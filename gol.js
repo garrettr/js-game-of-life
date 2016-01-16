@@ -10,9 +10,10 @@ function Cell(x, y) {
 		this.y = y;
 }
 
-function Grid(width, height) {
+function Grid(width, height, cellSize) {
 		this.width = width;
 		this.height = height;
+    this.cellSize = cellSize;
 		this.space = new Array(width * height);
 		this.clear();
 }
@@ -24,6 +25,7 @@ Grid.prototype.clear = function() {
 };
 
 function flipCoin() {
+    // TODO Math.random is crap, consider using window.crypto.getRandomValues
 		return Math.random() < 0.5 ? 0 : 1;
 }
 
@@ -48,14 +50,11 @@ Grid.prototype.draw = function(canvas) {
 		// Clear the canvas
 		ctx.clearRect(0 , 0, canvas.width, canvas.height);
 
-		var blockWidth = canvas.width / this.width;
-		var blockHeight = canvas.height / this.height;
-
 		for (var row = 0; row < this.height; row++) {
 				for (var col = 0; col < this.width; col++) {
 						if (this.get(row, col) == ALIVE) {
-								ctx.fillRect(row*blockHeight, col*blockWidth,
-														 blockHeight - 1, blockWidth - 1);
+								ctx.fillRect(row*this.cellSize, col*this.cellSize,
+														 this.cellSize - 1, this.cellSize - 1);
 						}
 				}
 		}
@@ -71,7 +70,6 @@ Grid.prototype.update = function() {
 
 						// Count living neighbors
 						var neighbors = [];
-
 						for (var rel_row = -1; rel_row <= 1; rel_row++) {
 								for (var rel_col = -1; rel_col <= 1; rel_col++) {
 										if (rel_row == 0 && rel_col == 0) {
@@ -116,12 +114,14 @@ Grid.prototype.update = function() {
 
 $(function () {
 		var canvas = document.getElementById('world');
-		canvas.width = 500;
-		canvas.height = 500;
-		// canvas.width = document.body.clientWidth;
-		// canvas.height = document.body.clientHeight;
-	    
-		var grid = new Grid(32, 32);
+		canvas.width = $(window).width();
+		canvas.height = $(window).height() - $('header').height();
+
+    var cellSize = 20; // px
+    var gridWidth = Math.floor(canvas.height / cellSize)
+    var gridHeight = Math.floor(canvas.width / cellSize)
+
+		var grid = new Grid(gridWidth, gridHeight, cellSize);
 		grid.randomize();
 		grid.draw(canvas);
 
@@ -165,12 +165,9 @@ $(function () {
 				var x = event.pageX - canvas.offsetLeft,
 						y = event.pageY - canvas.offsetTop;
 
-				var blockWidth = canvas.width / grid.width;
-				var blockHeight = canvas.height / grid.height;
-
 				// TODO collision detection
-				var row = Math.floor(x / blockWidth),
-						col = Math.floor(y / blockHeight);
+				var row = Math.floor(x / cellSize),
+						col = Math.floor(y / cellSize);
 
 				console.log("x: %d, y: %d, row: %d, col: %d", x, y, row, col);
 
