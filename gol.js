@@ -10,17 +10,40 @@ function Cell(x, y) {
 		this.y = y;
 }
 
-function Grid(width, height, cellSize) {
+function GridCell() {
+    this.state = DEAD;
+    this.generation = -1;
+}
+
+GridCell.prototype.getFillStyle = function(fadeWithAge) {
+    if (fadeWithAge) {
+        // Compute fill style based on the number of generations this cell has been alive
+        var minColor = 80;
+        var maxColor = 180;
+        var colorStep = 25;
+        var cellColor = Math.max(minColor, maxColor - this.generation * colorStep);
+        return `rgba(${cellColor}, ${cellColor}, ${cellColor}, 1.0)`;
+    } else {
+        return "rgba(90, 90, 90, 1.0)";
+    }
+}
+
+function Grid(width, height, cellSize, fadeWithAge) {
 		this.width = width;
 		this.height = height;
     this.cellSize = cellSize;
+    this.fadeWithAge = fadeWithAge;
+    this.highlighted = null;
+
 		this.space = new Array(width * height);
-		this.clear();
+    for (var i = 0; i < this.space.length; i++) {
+        this.space[i] = new GridCell();
+    }
 }
 
 Grid.prototype.clear = function() {
 		for (var i = 0; i < this.space.length; i++) {
-				this.space[i] = DEAD;
+				this.space[i] = new GridCell();
 		}
 };
 
@@ -31,7 +54,7 @@ function flipCoin() {
 
 Grid.prototype.randomize = function() {
 		for (var i = 0; i < this.space.length; i++) {
-				this.space[i] = flipCoin();
+				this.space[i].state = flipCoin();
 		}
 };
 
@@ -39,34 +62,63 @@ Grid.prototype.get = function(x, y) {
 		return this.space[x * this.width + y];
 };
 
-Grid.prototype.set = function(x, y, value) {
-		this.space[x * this.width + y] = value;
+Grid.prototype.set = function(x, y, cell) {
+    // Deep copy to avoid madness
+    newCell = new GridCell();
+    newCell.state = cell.state;
+    newCell.generation = cell.generation;
+    this.space[x * this.width + y] = newCell;
+}
+
+Grid.prototype.setState = function(x, y, state) {
+    var cell = this.space[x * this.width + y];
+
+    // Update the generation count
+    if (state == ALIVE) {
+        cell.generation += 1;
+    } else {
+        cell.generation = -1;
+    }
+
+		cell.state = state;
 };
+
+Grid.prototype.setHighlighted = function(cell) {
+    this.highlighted = cell;
+}
 
 Grid.prototype.draw = function(canvas) {
 		var ctx = canvas.getContext('2d');
-		ctx.fillStyle = "rgba(90, 90, 90, 1.0)";
 
 		// Clear the canvas
 		ctx.clearRect(0 , 0, canvas.width, canvas.height);
 
 		for (var row = 0; row < this.height; row++) {
 				for (var col = 0; col < this.width; col++) {
-						if (this.get(row, col) == ALIVE) {
+            var cell = this.get(row, col);
+
+						if (cell.state === ALIVE) {
+		            ctx.fillStyle = cell.getFillStyle(this.fadeWithAge);
 								ctx.fillRect(row*this.cellSize, col*this.cellSize,
 														 this.cellSize - 1, this.cellSize - 1);
 						}
+
+            if (this.highlighted !== null && cell == this.highlighted) {
+		            ctx.fillStyle = "rgba(180, 180, 180, 1.0)";
+								ctx.fillRect(row*this.cellSize, col*this.cellSize,
+														 this.cellSize - 1, this.cellSize - 1);
+            }
 				}
 		}
 };
 
 Grid.prototype.update = function() {
-		var updated = new Grid(this.width, this.height);
+		var updated = new Grid(this.width, this.height,
+                           this.cellSize, this.fadeWithAge);
 
 		for (var row = 0; row < this.height; row++) {
 				for (var col = 0; col < this.width; col++) {
-						// Copy value from previous generation
-						updated.set(row, col, this.get(row, col));
+            updated.set(row, col, this.get(row, col));
 
 						// Count living neighbors
 						var neighbors = [];
@@ -81,28 +133,31 @@ Grid.prototype.update = function() {
 								}
 						}
 
-						var numLiveNeighbors = neighbors.reduce(function(a, b) {
-								return a + b;
-						});
+						var numLiveNeighbors = 0;
+            for (var i = 0; i < neighbors.length; i++) {
+                if (neighbors[i].state === ALIVE) {
+                    numLiveNeighbors += 1;
+                }
+            }
 
 						// Update cells with the rules of life
-						if (this.get(row, col) == ALIVE) {
+						if (this.get(row, col).state == ALIVE) {
 								switch(numLiveNeighbors) {
 								case 0:
 								case 1:
-										updated.set(row, col, DEAD); // underpopulation
+										updated.setState(row, col, DEAD); // underpopulation
 										break;
 								case 2:
 								case 3:
-										updated.set(row, col, ALIVE); // stay alive
+										updated.setState(row, col, ALIVE); // stay alive
 										break;
 								default:
-										updated.set(row, col, DEAD); // overcrowding
+										updated.setState(row, col, DEAD); // overcrowding
 										break;
 								}
 						} else {
 								if (numLiveNeighbors == 3) {
-										updated.set(row, col, ALIVE); // reproduction
+										updated.setState(row, col, ALIVE); // reproduction
 								}
 						}
 				}
@@ -117,16 +172,22 @@ $(function () {
 		canvas.width = $(window).width();
 		canvas.height = $(window).height() - $('header').height();
 
-    var cellSize = 20; // px
+    var cellSize = 15; // px
     var gridWidth = Math.floor(canvas.height / cellSize)
     var gridHeight = Math.floor(canvas.width / cellSize)
+    var fadeWithAge = $("#fade-with-age").prop('checked');
 
-		var grid = new Grid(gridWidth, gridHeight, cellSize);
+		var grid = new Grid(gridWidth, gridHeight, cellSize, fadeWithAge);
 		grid.randomize();
 		grid.draw(canvas);
 
 		var running = false;
 		var simulationIntervalId = 0;
+
+    $('#fade-with-age').click(function toggleFadeWithAge() {
+        fadeWithAge = $("#fade-with-age").prop('checked');
+        grid.fadeWithAge = fadeWithAge;
+    });
 
 		$('#startstop').click(function startStopButton() {
 				if (running === false) {
@@ -136,6 +197,9 @@ $(function () {
 						$(this).html('Stop');
 						$('#clear').prop('disabled', true);
 						$('#random').prop('disabled', true);
+
+            // Clear the highlighted cell for the simulation
+            grid.setHighlighted(null);
 
 						// Start simulation
 						simulationIntervalId = setInterval(function updateAndDrawGrid() {
@@ -173,10 +237,35 @@ $(function () {
 
 				var currentVal = grid.get(row, col);
 				currentCell = new Cell(row, col);
-				grid.set(row, col, currentVal == 0 ? 1 : 0);
+				grid.setState(row, col, currentVal.state == 0 ? 1 : 0);
 				grid.draw(canvas);
 		});
 
+    $('#world').mousemove(function highlightCell(e) {
+        if (running === true) {
+            return; // Don't highlight cells while the simulation is running
+        }
+
+				var x = event.pageX - canvas.offsetLeft,
+						y = event.pageY - canvas.offsetTop;
+
+				// TODO collision detection
+				var row = Math.floor(x / cellSize),
+						col = Math.floor(y / cellSize);
+
+        grid.setHighlighted(grid.get(row, col));
+        grid.draw(canvas);
+    });
+
+    $('#world').mousedown(function preventTextSelection(e) {
+        // Prevent annoying selection of text in the header when clicking around
+        // in the canvas.
+        e.preventDefault();
+    });
+
+
+    // This code needs work, disabling it for now.
+    /*
 		$(window).keydown(function(e) {
 				var LEFT_ARROW = 37;
 				var RIGHT_ARROW = 39;
@@ -185,8 +274,6 @@ $(function () {
 				var SPACE = 32;
 
 				var key = e.which;
-				//console.log('keypress: %d', key);
-
 				switch(key) {
 				case LEFT_ARROW:
 						currentCell.x = (currentCell.x - 1).mod(grid.width);
@@ -201,16 +288,21 @@ $(function () {
 						currentCell.y = (currentCell.y + 1).mod(grid.height);
 						break;
 				case SPACE:
-						grid.set(currentCell.x, currentCell.y,
-										 grid.get(currentCell.x, currentCell.y) === 0 ? 1 : 0);
+						grid.setState(currentCell.x,
+                          currentCell.y,
+										      grid.get(currentCell.x, currentCell.y).state === 0 ? 1 : 0);
 						grid.draw(canvas);
+            // Avoid scrolling down when hitting space, this causes the grid to
+            // jump around and looks bad.
+            e.preventDefault();
 						break;
 				default:
 						break;
 				}
 
-				//console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
+				console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
 		});
+    */
 
 		$('#clear').click(function () {
 				grid.clear();
@@ -218,8 +310,26 @@ $(function () {
 		});
 
 		$('#random').click(function() {
+        grid.clear();
 				grid.randomize();
 				grid.draw(canvas);
 		});
+
+    $('#world').mouseenter(function () {
+        if (running === false) {
+            $('canvas#world').css('cursor', 'pointer');
+        } else {
+            $('canvas#world').css('cursor', 'default');
+        }
+    })
+
+    /* TODO
+    $('#world').mouseover(function() {
+        // Highlight current cell to encourage people to click em
+        if (running === false ) {
+            
+        }
+    });
+    */
 
 });
