@@ -31,9 +31,7 @@ function Grid(width, height, cellSize, fadeWithAge) {
     this.highlighted = null;
 
     this.space = new Array(width * height);
-    for (var i = 0; i < this.space.length; i++) {
-        this.space[i] = new Cell();
-    }
+    this.clear();
 }
 
 Grid.prototype.clear = function() {
