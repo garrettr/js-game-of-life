@@ -76,6 +76,10 @@ Grid.prototype.setState = function(x, y, state) {
     cell.state = state;
 };
 
+Grid.prototype.getHighlighted = function() {
+    return this.highlighted;
+}
+
 Grid.prototype.setHighlighted = function(cell) {
     this.highlighted = cell;
 }
@@ -241,8 +245,13 @@ $(function () {
         var row = Math.floor(x / cellSize),
             col = Math.floor(y / cellSize);
 
-        grid.setHighlighted(grid.get(row, col));
-        grid.draw(canvas);
+        var currentCell = grid.get(row, col);
+        // Avoid unnecessary redraws: only redraw the grid when the current
+        // highlighted cell changes.
+        if (currentCell !== grid.getHighlighted()) {
+            grid.setHighlighted(currentCell);
+            grid.draw(canvas);
+        }
     });
 
     $('#world').mousedown(function preventTextSelection(e) {
