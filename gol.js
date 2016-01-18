@@ -19,7 +19,7 @@ Cell.prototype.getFillStyle = function(fadeWithAge) {
         var cellColor = Math.max(minColor, maxColor - this.generation * colorStep);
         return `rgba(${cellColor}, ${cellColor}, ${cellColor}, 1.0)`;
     } else {
-        return "rgba(90, 90, 90, 1.0)";
+        return "rgba(180, 180, 180, 1.0)";
     }
 }
 
