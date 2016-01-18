@@ -5,17 +5,12 @@ Number.prototype.mod = function(n) { return ((this%n)+n)%n; };
 var DEAD = 0;
 var ALIVE = 1;
 
-function Cell(x, y) {
-    this.x = x;
-    this.y = y;
-}
-
-function GridCell() {
+function Cell() {
     this.state = DEAD;
     this.generation = -1;
 }
 
-GridCell.prototype.getFillStyle = function(fadeWithAge) {
+Cell.prototype.getFillStyle = function(fadeWithAge) {
     if (fadeWithAge) {
         // Compute fill style based on the number of generations this cell has been alive
         var minColor = 80;
@@ -37,13 +32,13 @@ function Grid(width, height, cellSize, fadeWithAge) {
 
     this.space = new Array(width * height);
     for (var i = 0; i < this.space.length; i++) {
-        this.space[i] = new GridCell();
+        this.space[i] = new Cell();
     }
 }
 
 Grid.prototype.clear = function() {
     for (var i = 0; i < this.space.length; i++) {
-        this.space[i] = new GridCell();
+        this.space[i] = new Cell();
     }
 };
 
@@ -64,7 +59,7 @@ Grid.prototype.get = function(x, y) {
 
 Grid.prototype.set = function(x, y, cell) {
     // Deep copy to avoid madness
-    newCell = new GridCell();
+    newCell = new Cell();
     newCell.state = cell.state;
     newCell.generation = cell.generation;
     this.space[x * this.width + y] = newCell;
@@ -217,10 +212,6 @@ $(function () {
         }
     });
 
-    // Default to the center of the grid
-    var currentCell = new Cell(Math.floor(grid.width / 2),
-                               Math.floor(grid.height / 2));
-
     $('#world').click(function drawInCanvas(event) {
         if (running === true) {
             return; // Don't allow drawing while simulation is running
@@ -236,7 +227,6 @@ $(function () {
         console.log("x: %d, y: %d, row: %d, col: %d", x, y, row, col);
 
         var currentVal = grid.get(row, col);
-        currentCell = new Cell(row, col);
         grid.setState(row, col, currentVal.state == 0 ? 1 : 0);
         grid.draw(canvas);
     });
