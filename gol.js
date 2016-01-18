@@ -328,13 +328,4 @@ $(function () {
         grid.draw(canvas);
     })
 
-    /* TODO
-    $('#world').mouseover(function() {
-        // Highlight current cell to encourage people to click em
-        if (running === false ) {
-            
-        }
-    });
-    */
-
 });
