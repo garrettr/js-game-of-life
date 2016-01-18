@@ -320,6 +320,14 @@ $(function () {
         }
     })
 
+    $('#world').mouseleave(function () {
+        // Clear the highlighted cell when the mouse leaves the canvas;
+        // otherwise it looks like you accidentally placed a cell that isn't
+        // really alive.
+        grid.setHighlighted(null);
+        grid.draw(canvas);
+    })
+
     /* TODO
     $('#world').mouseover(function() {
         // Highlight current cell to encourage people to click em
