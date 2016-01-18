@@ -265,46 +265,6 @@ $(function () {
     });
 
 
-    // This code needs work, disabling it for now.
-    /*
-    $(window).keydown(function(e) {
-        var LEFT_ARROW = 37;
-        var RIGHT_ARROW = 39;
-        var UP_ARROW = 38;
-        var DOWN_ARROW = 40;
-        var SPACE = 32;
-
-        var key = e.which;
-        switch(key) {
-        case LEFT_ARROW:
-            currentCell.x = (currentCell.x - 1).mod(grid.width);
-            break;
-        case RIGHT_ARROW:
-            currentCell.x = (currentCell.x + 1).mod(grid.width);
-            break;
-        case UP_ARROW:
-            currentCell.y = (currentCell.y - 1).mod(grid.height);
-            break;
-        case DOWN_ARROW:
-            currentCell.y = (currentCell.y + 1).mod(grid.height);
-            break;
-        case SPACE:
-            grid.setState(currentCell.x,
-                          currentCell.y,
-                          grid.get(currentCell.x, currentCell.y).state === 0 ? 1 : 0);
-            grid.draw(canvas);
-            // Avoid scrolling down when hitting space, this causes the grid to
-            // jump around and looks bad.
-            e.preventDefault();
-            break;
-        default:
-            break;
-        }
-
-        console.log("currentCell: (%d, %d)", currentCell.x, currentCell.y);
-    });
-    */
-
     function toggleKeyboardShortcutsHelp() {
         $('div#keyboard-shortcuts-help').toggle();
     }
