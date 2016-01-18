@@ -186,12 +186,12 @@ $(function () {
         grid.fadeWithAge = fadeWithAge;
     });
 
-    $('#startstop').click(function startStopButton() {
+    function toggleStartStop() {
         if (running === false) {
             running = true;
 
             // Update UI
-            $(this).html('Stop');
+            $('#startstop').html('Stop');
             $('#clear').prop('disabled', true);
             $('#random').prop('disabled', true);
 
@@ -206,12 +206,16 @@ $(function () {
         } else {
             running = false;
 
-            $(this).html('Start');
+            $('#startstop').html('Start');
             $('#clear').prop('disabled', false);
             $('#random').prop('disabled', false);
 
             clearInterval(simulationIntervalId);
         }
+    }
+
+    $('#startstop').click(function () {
+        toggleStartStop();
     });
 
     $('#world').click(function drawInCanvas(event) {
@@ -301,15 +305,57 @@ $(function () {
     });
     */
 
-    $('#clear').click(function () {
-        grid.clear();
-        grid.draw(canvas);
+    function toggleKeyboardShortcutsHelp() {
+        $('div#keyboard-shortcuts-help').toggle();
+    }
+
+    // Keyboard shortcuts
+    $(document).keypress(function(e) {
+        var key = e.which;
+        switch(key) {
+        case 's'.charCodeAt():
+            toggleStartStop();
+            break;
+        case 'c'.charCodeAt():
+            clear();
+            break;
+        case 'r'.charCodeAt():
+            randomize();
+            break;
+        case '?'.charCodeAt():
+            toggleKeyboardShortcutsHelp();
+        default:
+            break;
+        }
     });
 
-    $('#random').click(function() {
+    function clear() {
+        // Don't clear if the simulation is running
+        if (running === true) {
+            return;
+        }
+
+        grid.clear();
+        grid.draw(canvas);
+    }
+
+    $('#clear').click(function () {
+        clear();
+    });
+
+    function randomize() {
+        // Don't randomize if the simulation is running
+        if (running === true) {
+            return;
+        }
+
         grid.clear();
         grid.randomize();
         grid.draw(canvas);
+    }
+
+    $('#random').click(function() {
+        randomize();
     });
 
     $('#world').mouseenter(function () {
